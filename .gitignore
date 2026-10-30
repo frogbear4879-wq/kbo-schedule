@@ -1,0 +1,25 @@
+# 편집기·도구 설정
+.claude/
+.vscode/
+.idea/
+
+# 운영체제 임시 파일
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 의존성·빌드·로그
+node_modules/
+*.log
+
+# 환경 변수·비밀 정보 (이 프로젝트는 쓰지 않지만 실수 방지용)
+.env
+.env.*
+.vercel/
+
+# 원본 데이터(재배포 허가가 불분명하므로 올리지 않음) 와 사용하지 않는 샘플
+data/raw/
+data/kbo_2026_09_verified_sample.csv
+
+# 실제 2026 경기 CSV: 로컬 개발용으로만 보관 (재배포 허가 불분명)
+data/kbo_2026_full.csv

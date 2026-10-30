@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <!-- 모바일에서 화면 폭에 맞게 보이도록 하는 설정 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>야구 경기 일정 한눈에 보기</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>⚾ 야구 경기 일정 한눈에 보기</h1>
+    <p class="sub">KBO 10개 구단 경기 일정과 취소·연기 여부를 한 화면에서 확인하세요.</p>
+  </header>
+
+  <!-- 시연용 가상 데이터 안내 (app.js가 시연 모드일 때 표시) -->
+  <div id="demoBanner" class="demo-banner" role="note" hidden></div>
+
+  <main class="container">
+    <!-- 조회 옵션: 응원팀 선택 / 주간·월간 전환 -->
+    <section class="controls" aria-label="조회 옵션">
+      <label class="field">
+        <span>응원팀</span>
+        <select id="teamSelect">
+          <option value="">선택 안 함</option>
+          <!-- 구단 목록은 app.js에서 채웁니다 -->
+        </select>
+      </label>
+
+      <div class="field">
+        <span>보기</span>
+        <div class="toggle" role="group" aria-label="주간 월간 전환">
+          <button type="button" id="weekBtn" class="active">주간</button>
+          <button type="button" id="monthBtn">월간</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 기간 이동 -->
+    <section class="nav" aria-label="기간 이동">
+      <button type="button" id="prevBtn" aria-label="이전">◀</button>
+      <h2 id="periodTitle"></h2>
+      <button type="button" id="nextBtn" aria-label="다음">▶</button>
+    </section>
+
+    <!-- 상태 색상 안내 -->
+    <ul class="legend" aria-label="경기 상태 안내">
+      <li><span class="badge st-scheduled">예정</span></li>
+      <li><span class="badge st-finished">종료</span></li>
+      <li><span class="badge st-canceled">취소</span></li>
+      <li><span class="badge st-postponed">연기</span></li>
+    </ul>
+
+    <!-- 데이터 오류·안내 메시지 -->
+    <div id="message" class="message" hidden></div>
+
+    <!-- 일정표가 그려지는 곳 -->
+    <section id="schedule" class="schedule" aria-live="polite"></section>
+  </main>
+
+  <!-- 경기 상세 화면 (카드를 누르면 열림) -->
+  <dialog id="detail" class="detail" aria-labelledby="detailTitle">
+    <button type="button" id="detailClose" class="detail-close" aria-label="닫기">✕</button>
+    <h2 id="detailTitle"></h2>
+    <p id="detailMeta" class="detail-meta"></p>
+    <div id="detailLine"></div>
+    <p id="detailNote" class="message"></p>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="batters">타자 기록</button>
+      <button type="button" class="tab" data-tab="pitchers">투수 기록</button>
+      <button type="button" class="tab" data-tab="subs">교체 내역</button>
+    </div>
+    <div id="detailBody"></div>
+  </dialog>
+
+  <footer class="site-footer">
+    <small id="footerNote">비공식 학습용 프로젝트 · 실제 경기 정보는 KBO 공식 사이트에서 확인하세요.</small>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
