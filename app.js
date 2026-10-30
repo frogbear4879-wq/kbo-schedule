@@ -386,6 +386,48 @@ function renderSubs(g, data) {
     .join("")}</ul>`;
 }
 
+// 종료된 경기의 상세 화면(점수판) HTML 만들기
+// - 점수 데이터가 있을 때만 승리 팀을 강조하고, 같은 점수면 '무승부'로 표시합니다
+// - 이닝별 기록이 없으면 빈 표 대신 짧은 안내 한 줄만 보여줍니다
+function renderFinishedDetail(g, data) {
+  const hasScore = /^\d+$/.test(g.away_score) && /^\d+$/.test(g.home_score);
+  const away = Number(g.away_score);
+  const home = Number(g.home_score);
+  const result = !hasScore ? "" : away > home ? "away" : home > away ? "home" : "draw";
+
+  // 팀 한 칸: 원정/홈 표시, 팀 이름, 점수 (이긴 팀에는 '승' 표시)
+  const side = (key, label) => {
+    const cls = result === "draw" || result === "" ? "" : result === key ? "win" : "lose";
+    return `
+      <div class="fd-team ${cls}">
+        <span class="fd-label">${label}</span>
+        <span class="fd-name">${g[key + "_team"]}</span>
+        <span class="fd-score">${hasScore ? g[key + "_score"] : "-"}</span>
+        ${cls === "win" ? `<span class="fd-win">승</span>` : ""}
+      </div>`;
+  };
+
+  const d = parseDate(g.date);
+  const inn = data && data.innings;
+  const hasInnings = inn && Array.isArray(inn.away) && Array.isArray(inn.home);
+
+  return `
+    <div class="fd-info">
+      <span class="badge st-finished">종료</span>
+      <span class="fd-nowrap">${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일(${DAY_NAMES[d.getDay()]}) ${esc(g.time)}</span>
+      <span class="fd-nowrap">${esc(g.stadium)}</span>
+    </div>
+    <div class="fd-board" role="group" aria-label="최종 점수">
+      ${side("away", "원정")}
+      <span class="fd-colon">:</span>
+      ${side("home", "홈")}
+    </div>
+    ${result === "draw" ? `<p class="fd-draw">무승부</p>` : ""}
+    ${hasScore ? "" : `<p class="fd-note">최종 점수 기록 없음</p>`}
+    ${hasInnings ? renderLineScore(g, data) : `<p class="fd-note">이닝별 상세 기록은 제공되지 않습니다</p>`}
+    ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}</p>` : ""}`;
+}
+
 // 상세 화면 열기
 async function openDetail(gameId) {
   const g = state.games.find((x) => x.game_id === gameId);
@@ -394,6 +436,22 @@ async function openDetail(gameId) {
   // 상세 기록 기능이 꺼져 있으면(SHOW_DETAIL_RECORDS = false) 상세 파일을 읽지 않습니다
   const data = SHOW_DETAIL_RECORDS && g.status === "종료" ? await loadDetail(gameId) : null;
   currentDetail = { g, data };
+
+  // 종료된 경기는 새 상세 화면(점수판)을, 그 외(예정·취소·연기)는 기존 화면을 사용합니다
+  const finished = g.status === "종료";
+  $("detailFinished").hidden = !finished;
+  ["detailTitle", "detailMeta", "detailLine", "detailNote"].forEach((id) => ($(id).hidden = finished));
+
+  if (finished) {
+    $("detailFinished").innerHTML = renderFinishedDetail(g, data);
+    // 선수 기록 탭은 실제 기록 데이터가 있을 때만 보여줍니다 (없으면 빈 영역도 만들지 않음)
+    const tabsOn = SHOW_DETAIL_RECORDS && Boolean(data);
+    document.querySelector(".tabs").hidden = !tabsOn;
+    $("detailBody").hidden = !tabsOn;
+    if (tabsOn) showTab("batters");
+    if (!detailEl.open) detailEl.showModal();
+    return;
+  }
 
   // 탭 영역을 켜거나 끕니다 (기능 코드는 그대로 두고 화면에서만 숨김)
   document.querySelector(".tabs").hidden = !SHOW_DETAIL_RECORDS;

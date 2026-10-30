@@ -61,6 +61,9 @@
   <!-- 경기 상세 화면 (카드를 누르면 열림) -->
   <dialog id="detail" class="detail" aria-labelledby="detailTitle">
     <button type="button" id="detailClose" class="detail-close" aria-label="닫기">✕</button>
+    <!-- 종료된 경기 전용 점수판 (app.js가 채움) -->
+    <div id="detailFinished" class="detail-finished" hidden></div>
+
     <h2 id="detailTitle"></h2>
     <p id="detailMeta" class="detail-meta"></p>
     <div id="detailLine"></div>
