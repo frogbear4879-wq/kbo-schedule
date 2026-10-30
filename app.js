@@ -165,6 +165,9 @@ function gameCard(g) {
     </div>`;
 }
 
+// 모바일 화면인지 확인 (style.css의 @media (max-width: 700px)와 같은 기준)
+const mobileQuery = window.matchMedia("(max-width: 700px)");
+
 // 하루 칸 하나의 HTML 만들기
 function dayCell(date, gamesByDate, extraClass = "") {
   const key = formatDate(date);
@@ -188,12 +191,43 @@ function dayCell(date, gamesByDate, extraClass = "") {
         </div>`
       : "";
 
+  // 모바일 월간 달력에서만 날짜를 누를 수 있습니다 (T8). PC에서는 기존 모양 그대로입니다.
+  // 선택한 날짜는 state.baseDate 입니다 → 주간 보기로 바꿔도 같은 날짜가 이어집니다.
+  const clickable = state.view === "month" && mobileQuery.matches;
+  const selected = clickable && key === formatDate(state.baseDate);
+  const clickAttrs = clickable
+    ? ` role="button" tabindex="0" data-date="${key}" aria-pressed="${selected}" aria-label="${date.getMonth() + 1}월 ${date.getDate()}일 ${DAY_NAMES[dow]}요일, 경기 ${list.length}개${hasMine ? ", 응원팀 경기 있음" : ""}"`
+    : "";
+
   return `
-    <div class="day ${extraClass} ${list.length ? "" : "empty"} ${hasMine ? "has-mine" : ""}">
+    <div class="day ${extraClass} ${list.length ? "" : "empty"} ${hasMine ? "has-mine" : ""} ${selected ? "selected" : ""}"${clickAttrs}>
       ${compact}
       <div class="day-label ${dowClass}">${label}<span class="dow">(${DAY_NAMES[dow]})</span></div>
       ${body}
     </div>`;
+}
+
+// 모바일 월간 달력 아래에 보여줄 '선택한 날짜의 경기 목록' HTML (T8)
+function renderDayPanel(gamesByDate) {
+  const d = state.baseDate;
+  const list = gamesByDate[formatDate(d)] || [];
+  const title = `${d.getMonth() + 1}월 ${d.getDate()}일(${DAY_NAMES[d.getDay()]})`;
+  return `
+    <section class="month-panel" aria-live="polite">
+      <h3 class="mp-title">${title} · ${list.length ? `경기 ${list.length}개` : "경기 없음"}</h3>
+      ${list.length ? list.map(gameCard).join("") : `<div class="no-game mp-empty">경기 없음</div>`}
+    </section>`;
+}
+
+// 날짜 선택 (모바일 월간 달력). 앞뒤 달의 날짜를 누르면 그 달로 이동하면서 그 날짜가 선택됩니다.
+function selectDate(key, keepFocus) {
+  state.baseDate = parseDate(key);
+  render();
+  // 키보드로 선택했을 때는 다시 그려도 선택한 칸에 포커스가 남도록 합니다
+  if (keepFocus) {
+    const cell = scheduleEl.querySelector(".day.selected");
+    if (cell) cell.focus();
+  }
 }
 
 // 일정표 전체 그리기
@@ -241,7 +275,9 @@ function render() {
   scheduleEl.classList.toggle("is-month", state.view === "month"); // 모바일 월간 달력 격자용
   // 모바일 월간 달력에서 ★의 뜻을 알려 주는 안내 (응원팀 선택 시에만, PC에서는 CSS로 숨김)
   const legend = state.view === "month" && state.myTeam ? `<div class="month-legend">★ 응원팀(${state.myTeam}) 경기가 있는 날</div>` : "";
-  scheduleEl.innerHTML = heads + cells + legend;
+  // 모바일 월간 달력일 때만 선택한 날짜의 경기 목록을 달력 아래에 붙입니다
+  const panel = state.view === "month" && mobileQuery.matches ? renderDayPanel(gamesByDate) : "";
+  scheduleEl.innerHTML = heads + cells + legend + panel;
 }
 
 // 안내/오류 메시지 표시
@@ -541,11 +577,17 @@ async function init() {
   // 경기 카드 클릭/키보드 → 상세 화면 (일정표를 다시 그려도 동작하도록 부모에 연결)
   scheduleEl.addEventListener("click", (e) => {
     const card = e.target.closest(".game");
-    if (card) openDetail(card.dataset.id);
+    if (card) { openDetail(card.dataset.id); return; }
+    // 모바일 월간 달력의 날짜 칸 (data-date 는 이 경우에만 붙습니다)
+    const day = e.target.closest(".day[data-date]");
+    if (day) selectDate(day.dataset.date, false);
   });
   scheduleEl.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
     const card = e.target.closest(".game");
-    if (card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openDetail(card.dataset.id); }
+    if (card) { e.preventDefault(); openDetail(card.dataset.id); return; }
+    const day = e.target.closest(".day[data-date]");
+    if (day) { e.preventDefault(); selectDate(day.dataset.date, true); }
   });
   // 상세 화면: 탭, 닫기 버튼, 바깥 영역 클릭
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
@@ -586,6 +628,7 @@ async function init() {
   const todayKey = formatDate(today);
   state.baseDate = !IS_DEMO && todayKey >= first && todayKey <= last ? today : parseDate(first);
   render();
+  mobileQuery.addEventListener("change", render);
 }
 
 init();
