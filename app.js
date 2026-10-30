@@ -435,10 +435,8 @@ async function init() {
     $("demoBanner").hidden = false;
     $("demoBanner").innerHTML = `<b>⚠ ${DEMO_NOTICE}.</b> 구장도 실제 구장이 아닌 시연용 이름입니다.`;
     $("footerNote").textContent = `${DEMO_NOTICE}. 학습용 시연 프로젝트이며 KBO와 무관합니다.`;
-  } else {
-    document.title += " (로컬 개발용 실제 데이터)";
-    $("footerNote").textContent = "로컬 개발용: 실제 2026 데이터(출처: dentearl/kbo-data, 재배포 허가 미확인). 공개 배포 금지.";
   }
+  // ?data=real 일 때의 '로컬 개발용 실제 데이터' 표시는 파일을 실제로 읽은 뒤에만 붙입니다 (아래 CSV 불러오기 참고)
 
   // 구단 선택 목록 채우기
   TEAMS.forEach((t) => teamSelect.add(new Option(t, t)));
@@ -477,6 +475,12 @@ async function init() {
     const { games, errors } = parseCsv(await res.text());
     state.games = games;
 
+    // 실제 데이터 파일을 읽는 데 성공한 로컬 환경에서만 '개발용 실제 데이터' 표시
+    if (!IS_DEMO && games.length > 0) {
+      document.title += " (로컬 개발용 실제 데이터)";
+      $("footerNote").textContent = "로컬 개발용: 실제 2026 데이터(출처: dentearl/kbo-data, 재배포 허가 미확인). 공개 배포 금지.";
+    }
+
     if (errors.length > 0) {
       showMessage(
         `일부 데이터에 문제가 있어 건너뛰었습니다.<ul>${errors.map((e) => `<li>${e}</li>`).join("")}</ul>`
@@ -486,7 +490,7 @@ async function init() {
     showMessage(
       IS_DEMO
         ? "일정 파일을 불러오지 못했습니다. 파일을 더블클릭해서 여는 대신 로컬 서버로 실행했는지 확인해 주세요. (README 참고)"
-        : "실제 데이터 파일(data/kbo_2026_full.csv)이 없습니다. 이 파일은 로컬 개발용이며 배포 사이트에는 없습니다. 주소에서 ?data=real 을 지우면 시연 데이터가 열립니다.",
+        : `이 주소에서는 실제 경기 데이터를 열 수 없습니다. 공개 사이트에는 실제 경기 데이터가 없고 시연용 가상 데이터만 제공합니다. <a href="./">시연용 가상 데이터로 돌아가기</a>`,
       true
     );
   }
