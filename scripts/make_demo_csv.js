@@ -7,6 +7,14 @@ const path = require("path");
 const OUTPUT = path.join(__dirname, "..", "data", "demo_games.csv");
 const TEAMS = ["두산", "LG", "삼성", "롯데", "KT", "한화", "NC", "KIA", "키움", "SSG"];
 
+// 홈팀의 실제 홈구장 이름 (경기 날짜·대진·결과·상태는 가상이지만 구장 이름만 실제 이름을 씁니다)
+// 두산과 LG는 같은 구장(잠실야구장)을 함께 씁니다.
+const HOME_STADIUMS = {
+  두산: "잠실야구장", LG: "잠실야구장", 삼성: "대구 삼성 라이온즈 파크", 롯데: "사직야구장",
+  KT: "수원 KT 위즈 파크", 한화: "대전 한화생명 볼파크", NC: "창원NC파크",
+  KIA: "광주-기아 챔피언스 필드", 키움: "고척스카이돔", SSG: "인천SSG랜더스필드",
+};
+
 // 가상 일정 기간: 2026-09-08(화) ~ 2026-09-20(일), 월요일은 휴식
 const START = new Date(2026, 8, 8);
 const END = new Date(2026, 8, 20);
@@ -45,8 +53,12 @@ for (let d = new Date(START); d <= END; d.setDate(d.getDate() + 1)) {
   const date = fmt(d);
   const time = d.getDay() === 6 || d.getDay() === 0 ? "17:00" : "18:30";
 
+  const usedStadiums = new Set(); // 그날 이미 쓰는 구장 (같은 날 한 구장에서 두 경기가 열리지 않게 함)
   pairings(round).forEach((g, idx) => {
     const n = idx + 1;
+    // 두산·LG가 같은 날 모두 홈이면 잠실야구장이 겹치므로, 나중 경기는 홈/원정을 바꿉니다
+    if (usedStadiums.has(HOME_STADIUMS[g.home])) g = { home: g.away, away: g.home };
+    usedStadiums.add(HOME_STADIUMS[g.home]);
     let status = "종료";
     if (CANCEL_DAYS[date] === n) status = "취소";
     else if (POSTPONE_DAYS[date] === n) status = "연기";
@@ -62,7 +74,7 @@ for (let d = new Date(START); d <= END; d.setDate(d.getDate() + 1)) {
       game_id: `DEMO-${date.replace(/-/g, "")}-${n}`,
       date, time,
       home_team: g.home, away_team: g.away,
-      stadium: `시연구장(${g.home})`, // 실제 구장이 아님을 이름에서 구분
+      stadium: HOME_STADIUMS[g.home],
       status, away_score: away, home_score: home,
     });
   });

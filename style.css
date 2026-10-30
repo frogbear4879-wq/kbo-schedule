@@ -160,8 +160,8 @@ body {
 .game.st-canceled-card  { border-left-color: #ef4444; }
 .game.st-postponed-card { border-left-color: #f59e0b; }
 /* 취소/연기 경기는 팀명에 취소선 */
-.game.st-canceled-card .teams,
-.game.st-postponed-card .teams { text-decoration: line-through; text-decoration-color: rgba(0,0,0,.35); }
+.game.st-canceled-card .tn,
+.game.st-postponed-card .tn { text-decoration: line-through; text-decoration-color: rgba(0,0,0,.35); }
 
 /* 내 팀 경기 강조 */
 .game.my-team {
@@ -170,7 +170,7 @@ body {
   border-left-color: #ea580c;
   box-shadow: 0 0 0 2px rgba(251, 146, 60, .35);
 }
-.game.my-team .teams::before { content: "★ "; color: #ea580c; }
+.game .tm.mine .tn::before { content: "★ "; color: #ea580c; }
 .my-team-name { color: #c2410c; }
 
 /* 팀을 선택했을 때 다른 팀 경기는 살짝 흐리게 */
@@ -335,3 +335,13 @@ body {
 .dc-count { font-size: .68rem; color: #1d4ed8; background: #dbeafe; border-radius: 999px; padding: 0 5px; line-height: 1.5; white-space: nowrap; }
 .dc-star { font-size: .8rem; line-height: 1; color: #ea580c; }
 .month-legend { display: none; }
+
+/* ===== 홈/원정 표시 (경기 카드와 상세 화면) ===== */
+.tm { display: flex; align-items: center; gap: 6px; min-width: 0; line-height: 1.55; }
+.tn { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ts { flex: none; margin-left: auto; padding-left: 6px; font-variant-numeric: tabular-nums; }
+.ha { flex: none; font-size: .65rem; font-weight: 700; line-height: 1.5; padding: 0 5px; border-radius: 4px; border: 1px solid; white-space: nowrap; }
+.ha.away { color: #475569; background: #f1f5f9; border-color: #cbd5e1; }
+.ha.home { color: #166534; background: #dcfce7; border-color: #86efac; }
+.fd-label.ha { font-size: .75rem; padding: 1px 8px; border-radius: 999px; }
+.fd-demo small { display: block; margin-top: 2px; font-size: .75rem; }

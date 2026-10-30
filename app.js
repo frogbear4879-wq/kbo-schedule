@@ -13,6 +13,8 @@ const REAL_CSV_PATH = "data/kbo_2026_full.csv";
 const IS_DEMO = new URLSearchParams(location.search).get("data") !== "real";
 const CSV_PATH = IS_DEMO ? DEMO_CSV_PATH : REAL_CSV_PATH;
 const DEMO_NOTICE = "시연용 가상 데이터이며 실제 경기 일정과 결과가 아닙니다";
+// 구장 이름은 실제 홈구장 이름을 쓰므로, 그 외 정보가 가상임을 함께 알립니다
+const DEMO_STADIUM_NOTE = "구장 이름만 실제 홈구장 이름이고, 날짜·대진·점수·상태는 모두 가상입니다.";
 
 // KBO 10개 구단 (CSV의 팀 이름과 똑같이 써야 합니다)
 const TEAMS = ["두산", "LG", "삼성", "롯데", "KT", "한화", "NC", "KIA", "키움", "SSG"];
@@ -147,14 +149,23 @@ function gameCard(g) {
   const cls = STATUS_CLASS[g.status];
   const isMine = state.myTeam && (g.home_team === state.myTeam || g.away_team === state.myTeam);
 
-  // 응원팀 이름은 색을 다르게 표시
-  const name = (t) => (t === state.myTeam ? `<span class="my-team-name">${t}</span>` : t);
-
-  // 종료된 경기는 "원정팀 점수 : 홈팀 점수" 형태로, 아니면 "원정팀 vs 홈팀"
+  // 종료된 경기는 팀 이름 옆에 점수를 함께 보여줍니다
   const hasScore = g.status === "종료" && g.away_score !== "" && g.home_score !== "";
-  const teamsLine = hasScore
-    ? `${name(g.away_team)} <b class="score">${g.away_score}</b> : <b class="score">${g.home_score}</b> ${name(g.home_team)}`
-    : `${name(g.away_team)} vs ${name(g.home_team)}`;
+
+  // 팀 한 줄: [원정/홈 표시] 팀 이름 (종료 경기는 점수). 위쪽이 원정팀, 아래쪽이 홈팀입니다(기존 순서 그대로).
+  // 응원팀 줄에는 ★를 붙이고 이름 색을 다르게 합니다.
+  const row = (side, team, score) => {
+    const mine = team === state.myTeam;
+    const label = side === "away" ? "원정" : "홈";
+    const full = side === "away" ? "원정(AWAY)" : "홈(HOME)";
+    return `
+      <div class="tm ${mine ? "mine" : ""}">
+        <span class="ha ${side}" title="${full}" aria-label="${full}">${label}</span>
+        <span class="tn ${mine ? "my-team-name" : ""}">${team}</span>
+        ${hasScore ? `<b class="score ts">${score}</b>` : ""}
+      </div>`;
+  };
+  const teamsLine = row("away", g.away_team, g.away_score) + row("home", g.home_team, g.home_score);
 
   // 카드를 누르면 상세 화면이 열립니다 (키보드: Enter/Space)
   return `
@@ -459,7 +470,7 @@ function renderFinishedDetail(g, data) {
     const cls = result === "draw" || result === "" ? "" : result === key ? "win" : "lose";
     return `
       <div class="fd-team ${cls}">
-        <span class="fd-label">${label}</span>
+        <span class="fd-label ha ${key}">${label}</span>
         <span class="fd-name">${g[key + "_team"]}</span>
         <span class="fd-score">${hasScore ? g[key + "_score"] : "-"}</span>
         ${cls === "win" ? `<span class="fd-win">승</span>` : ""}
@@ -477,14 +488,14 @@ function renderFinishedDetail(g, data) {
       <span class="fd-nowrap">${esc(g.stadium)}</span>
     </div>
     <div class="fd-board" role="group" aria-label="최종 점수">
-      ${side("away", "원정")}
+      ${side("away", "원정(AWAY)")}
       <span class="fd-colon">:</span>
-      ${side("home", "홈")}
+      ${side("home", "홈(HOME)")}
     </div>
     ${result === "draw" ? `<p class="fd-draw">무승부</p>` : ""}
     ${hasScore ? "" : `<p class="fd-note">최종 점수 기록 없음</p>`}
     ${hasInnings ? renderLineScore(g, data) : `<p class="fd-note">이닝별 상세 기록은 제공되지 않습니다</p>`}
-    ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}</p>` : ""}`;
+    ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}<br><small>${DEMO_STADIUM_NOTE}</small></p>` : ""}`;
 }
 
 // 예정·취소·연기 경기의 상세 화면 HTML 만들기
@@ -506,16 +517,16 @@ function renderUnplayedDetail(g) {
       <span class="fd-nowrap">${esc(g.stadium)}</span>
     </div>
     <div class="fd-board" role="group" aria-label="대진">
-      <div class="fd-team"><span class="fd-label">원정</span><span class="fd-name">${g.away_team}</span></div>
+      <div class="fd-team"><span class="fd-label ha away">원정(AWAY)</span><span class="fd-name">${g.away_team}</span></div>
       <span class="fd-colon fd-vs">VS</span>
-      <div class="fd-team"><span class="fd-label">홈</span><span class="fd-name">${g.home_team}</span></div>
+      <div class="fd-team"><span class="fd-label ha home">홈(HOME)</span><span class="fd-name">${g.home_team}</span></div>
     </div>
     <div class="fd-status st-${cls}">
       <span class="fd-status-label">경기 상태</span>
       <strong class="fd-status-name">${g.status}</strong>
       <span class="fd-status-note">${UNPLAYED_NOTES[g.status]}</span>
     </div>
-    ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}</p>` : ""}`;
+    ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}<br><small>${DEMO_STADIUM_NOTE}</small></p>` : ""}`;
 }
 
 // 상세 화면 열기
@@ -553,7 +564,7 @@ async function init() {
   // 시연용 데이터일 때는 안내 배너를 항상 보여주고, 푸터 문구도 바꿉니다
   if (IS_DEMO) {
     $("demoBanner").hidden = false;
-    $("demoBanner").innerHTML = `<b>⚠ ${DEMO_NOTICE}.</b> 구장도 실제 구장이 아닌 시연용 이름입니다.`;
+    $("demoBanner").innerHTML = `<b>⚠ ${DEMO_NOTICE}.</b> ${DEMO_STADIUM_NOTE}`;
     $("footerNote").textContent = `${DEMO_NOTICE}. 학습용 시연 프로젝트이며 KBO와 무관합니다.`;
   }
   // ?data=real 일 때의 '로컬 개발용 실제 데이터' 표시는 파일을 실제로 읽은 뒤에만 붙입니다 (아래 CSV 불러오기 참고)
