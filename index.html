@@ -59,15 +59,10 @@
   </main>
 
   <!-- 경기 상세 화면 (카드를 누르면 열림) -->
-  <dialog id="detail" class="detail" aria-labelledby="detailTitle">
+  <dialog id="detail" class="detail" aria-label="경기 상세">
     <button type="button" id="detailClose" class="detail-close" aria-label="닫기">✕</button>
-    <!-- 종료된 경기 전용 점수판 (app.js가 채움) -->
-    <div id="detailFinished" class="detail-finished" hidden></div>
-
-    <h2 id="detailTitle"></h2>
-    <p id="detailMeta" class="detail-meta"></p>
-    <div id="detailLine"></div>
-    <p id="detailNote" class="message"></p>
+    <!-- 경기 상세(종료: 점수판 / 예정·취소·연기: 상태 안내). app.js가 채움 -->
+    <div id="detailMain"></div>
 
     <div class="tabs" role="tablist">
       <button type="button" class="tab active" data-tab="batters">타자 기록</button>

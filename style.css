@@ -296,3 +296,14 @@ body {
   .fd-colon { font-size: 1.5rem; }
 }
 .fd-nowrap { white-space: nowrap; }
+
+/* ===== 예정·취소·연기 경기 상세 화면 (점수판과 같은 모양, 점수·승패 없음) ===== */
+.fd-vs { font-size: 1.1rem; letter-spacing: .05em; }
+.fd-team .fd-name { padding: 10px 0 6px; font-size: 1.3rem; }
+.fd-status {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  margin-top: 6px; padding: 12px 10px; border-radius: 12px; text-align: center;
+}
+.fd-status-label { font-size: .75rem; opacity: .8; }
+.fd-status-name { font-size: 1.6rem; line-height: 1.2; }
+.fd-status-note { font-size: .85rem; }

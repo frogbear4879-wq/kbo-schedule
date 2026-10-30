@@ -428,53 +428,56 @@ function renderFinishedDetail(g, data) {
     ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}</p>` : ""}`;
 }
 
+// 예정·취소·연기 경기의 상세 화면 HTML 만들기
+// - 종료 경기 점수판(T2)과 같은 모양이지만 점수·승패 표시는 없습니다
+// - 데이터에 없는 정보(변경된 일정, 취소 사유 등)는 만들지 않고 '제공되지 않습니다'로 알립니다
+const UNPLAYED_NOTES = {
+  "예정": "경기 결과는 경기가 끝난 뒤 확인할 수 있습니다.",
+  "취소": "경기가 취소되었습니다. 취소 사유는 제공되지 않습니다.",
+  "연기": "경기가 연기되었습니다. 변경된 경기 일정은 제공되지 않습니다.",
+};
+
+function renderUnplayedDetail(g) {
+  const cls = STATUS_CLASS[g.status];
+  const d = parseDate(g.date);
+  return `
+    <div class="fd-info">
+      <span class="badge st-${cls}">${g.status}</span>
+      <span class="fd-nowrap">예정일 ${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일(${DAY_NAMES[d.getDay()]}) ${esc(g.time)}</span>
+      <span class="fd-nowrap">${esc(g.stadium)}</span>
+    </div>
+    <div class="fd-board" role="group" aria-label="대진">
+      <div class="fd-team"><span class="fd-label">원정</span><span class="fd-name">${g.away_team}</span></div>
+      <span class="fd-colon fd-vs">VS</span>
+      <div class="fd-team"><span class="fd-label">홈</span><span class="fd-name">${g.home_team}</span></div>
+    </div>
+    <div class="fd-status st-${cls}">
+      <span class="fd-status-label">경기 상태</span>
+      <strong class="fd-status-name">${g.status}</strong>
+      <span class="fd-status-note">${UNPLAYED_NOTES[g.status]}</span>
+    </div>
+    ${IS_DEMO ? `<p class="fd-demo">${DEMO_NOTICE}</p>` : ""}`;
+}
+
 // 상세 화면 열기
 async function openDetail(gameId) {
   const g = state.games.find((x) => x.game_id === gameId);
   if (!g) return;
 
   // 상세 기록 기능이 꺼져 있으면(SHOW_DETAIL_RECORDS = false) 상세 파일을 읽지 않습니다
-  const data = SHOW_DETAIL_RECORDS && g.status === "종료" ? await loadDetail(gameId) : null;
+  const finished = g.status === "종료";
+  const data = SHOW_DETAIL_RECORDS && finished ? await loadDetail(gameId) : null;
   currentDetail = { g, data };
 
-  // 종료된 경기는 새 상세 화면(점수판)을, 그 외(예정·취소·연기)는 기존 화면을 사용합니다
-  const finished = g.status === "종료";
-  $("detailFinished").hidden = !finished;
-  ["detailTitle", "detailMeta", "detailLine", "detailNote"].forEach((id) => ($(id).hidden = finished));
+  // 종료 경기는 점수판, 예정·취소·연기 경기는 상태 안내 화면
+  $("detailMain").innerHTML = finished ? renderFinishedDetail(g, data) : renderUnplayedDetail(g);
 
-  if (finished) {
-    $("detailFinished").innerHTML = renderFinishedDetail(g, data);
-    // 선수 기록 탭은 실제 기록 데이터가 있을 때만 보여줍니다 (없으면 빈 영역도 만들지 않음)
-    const tabsOn = SHOW_DETAIL_RECORDS && Boolean(data);
-    document.querySelector(".tabs").hidden = !tabsOn;
-    $("detailBody").hidden = !tabsOn;
-    if (tabsOn) showTab("batters");
-    if (!detailEl.open) detailEl.showModal();
-    return;
-  }
+  // 선수 기록 탭은 종료 경기에 실제 기록 데이터가 있을 때만 보여줍니다 (없으면 빈 영역도 만들지 않음)
+  const tabsOn = SHOW_DETAIL_RECORDS && finished && Boolean(data);
+  document.querySelector(".tabs").hidden = !tabsOn;
+  $("detailBody").hidden = !tabsOn;
+  if (tabsOn) showTab("batters");
 
-  // 탭 영역을 켜거나 끕니다 (기능 코드는 그대로 두고 화면에서만 숨김)
-  document.querySelector(".tabs").hidden = !SHOW_DETAIL_RECORDS;
-  $("detailBody").hidden = !SHOW_DETAIL_RECORDS;
-
-  const cls = STATUS_CLASS[g.status];
-  const hasScore = g.status === "종료" && g.away_score !== "";
-  const d = parseDate(g.date);
-  $("detailTitle").innerHTML = `${g.away_team} <b class="score">${hasScore ? g.away_score : "-"}</b> : <b class="score">${hasScore ? g.home_score : "-"}</b> ${g.home_team}`;
-  $("detailMeta").innerHTML = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일(${DAY_NAMES[d.getDay()]}) ${g.time} · ${g.stadium} <span class="badge st-${cls}">${g.status}</span>${IS_DEMO ? `<br><span class="demo-tag">${DEMO_NOTICE}</span>` : ""}`;
-  $("detailLine").innerHTML = renderLineScore(g, data);
-
-  // 경기가 종료되지 않았으면 기록이 있을 수 없으므로 이유를 알려줍니다
-  $("detailNote").textContent =
-    g.status !== "종료"
-      ? `${g.status}된 경기라 경기 기록이 없습니다.`
-      : !SHOW_DETAIL_RECORDS
-        ? "이닝별 점수와 선수별 상세 기록은 준비 중입니다."
-        : data
-          ? ""
-          : "이 경기의 상세 기록(이닝별 점수, 타자·투수 기록, 교체)은 아직 수집되지 않았습니다.";
-
-  if (SHOW_DETAIL_RECORDS) showTab("batters");
   if (!detailEl.open) detailEl.showModal();
 }
 
