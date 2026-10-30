@@ -34,6 +34,17 @@
           <button type="button" id="monthBtn">월간</button>
         </div>
       </div>
+
+      <!-- 내 팀 경기만 보기 (T9): 응원팀을 선택해야 켤 수 있고, 새로고침하면 꺼진 상태로 시작 -->
+      <div class="field filter-field">
+        <span>필터</span>
+        <label class="switch">
+          <input type="checkbox" id="onlyMineChk" role="switch" disabled>
+          <span class="track" aria-hidden="true"></span>
+          <span class="switch-text">내 팀 경기만 보기</span>
+        </label>
+        <small id="onlyMineHint" class="field-hint">응원팀을 선택하면 사용할 수 있습니다</small>
+      </div>
     </section>
 
     <!-- 기간 이동 -->
@@ -53,6 +64,9 @@
 
     <!-- 데이터 오류·안내 메시지 -->
     <div id="message" class="message" hidden></div>
+
+    <!-- 내 팀 경기만 보기를 켰는데 이 기간에 그 팀 경기가 없을 때의 안내 -->
+    <div id="filterNotice" class="filter-notice" role="status" hidden></div>
 
     <!-- 일정표가 그려지는 곳 -->
     <section id="schedule" class="schedule" aria-live="polite"></section>

@@ -36,6 +36,7 @@ const state = {
   view: "week",       // "week"(주간) 또는 "month"(월간)
   baseDate: null,     // 지금 보고 있는 기준 날짜
   myTeam: "",         // 응원팀
+  onlyMine: false,    // '내 팀 경기만 보기' (저장하지 않음: 새로고침하면 항상 꺼진 상태)
 };
 
 // 자주 쓰는 화면 요소
@@ -43,6 +44,20 @@ const $ = (id) => document.getElementById(id);
 const teamSelect = $("teamSelect");
 const scheduleEl = $("schedule");
 const messageEl = $("message");
+const onlyMineChk = $("onlyMineChk");
+const onlyMineHint = $("onlyMineHint");
+const filterNoticeEl = $("filterNotice");
+
+// '내 팀 경기만 보기'가 실제로 적용 중인지 (응원팀이 선택되어 있고 스위치가 켜진 경우)
+const isFilterOn = () => state.onlyMine && Boolean(state.myTeam);
+
+// 스위치 화면을 상태에 맞게 맞추기: 응원팀이 없으면 끄고 사용 못 하게 함
+function syncFilterControl() {
+  if (!state.myTeam) state.onlyMine = false;
+  onlyMineChk.disabled = !state.myTeam;
+  onlyMineChk.checked = state.onlyMine;
+  onlyMineHint.hidden = Boolean(state.myTeam); // 응원팀이 없을 때만 사용 방법 안내를 보여줌
+}
 
 // ---------- 3. 날짜 도우미 함수 ----------
 
@@ -226,7 +241,7 @@ function renderDayPanel(gamesByDate) {
   return `
     <section class="month-panel" aria-live="polite">
       <h3 class="mp-title">${title} · ${list.length ? `경기 ${list.length}개` : "경기 없음"}</h3>
-      ${list.length ? list.map(gameCard).join("") : `<div class="no-game mp-empty">경기 없음</div>`}
+      ${list.length ? list.map(gameCard).join("") : `<div class="no-game mp-empty">${isFilterOn() ? `선택한 팀(${state.myTeam})의 경기가 없습니다` : "경기 없음"}</div>`}
     </section>`;
 }
 
@@ -244,8 +259,12 @@ function selectDate(key, keepFocus) {
 // 일정표 전체 그리기
 function render() {
   // 날짜별로 경기를 묶어 둡니다 → { "2026-09-01": [경기, 경기...] }
+  // '내 팀 경기만 보기'가 켜져 있으면 응원팀이 홈 또는 원정으로 나오는 경기만 사용합니다
+  const shownGames = isFilterOn()
+    ? state.games.filter((g) => g.home_team === state.myTeam || g.away_team === state.myTeam)
+    : state.games;
   const gamesByDate = {};
-  state.games.forEach((g) => (gamesByDate[g.date] = gamesByDate[g.date] || []).push(g));
+  shownGames.forEach((g) => (gamesByDate[g.date] = gamesByDate[g.date] || []).push(g));
 
   let start, count, title, monthNum = null;
 
@@ -275,11 +294,21 @@ function render() {
 
   // 날짜 칸들
   let cells = "";
+  let shownCount = 0; // 화면에 나온 기간 안의 경기 수
   for (let i = 0; i < count; i++) {
     const date = addDays(start, i);
     let extra = state.view === "month" ? "is-month-view" : "";
     if (monthNum !== null && date.getMonth() !== monthNum) extra += " other-month";
+    shownCount += (gamesByDate[formatDate(date)] || []).length;
     cells += dayCell(date, gamesByDate, extra);
+  }
+
+  // 필터를 켰는데 이 기간에 응원팀 경기가 하나도 없으면 안내를 보여줍니다
+  if (isFilterOn() && shownCount === 0) {
+    filterNoticeEl.innerHTML = `<b>선택한 팀(${state.myTeam})의 경기가 없습니다.</b><br><small>이 기간에는 ${state.myTeam} 경기가 없습니다. 필터를 끄거나 다른 기간으로 이동해 보세요.</small>`;
+    filterNoticeEl.hidden = false;
+  } else {
+    filterNoticeEl.hidden = true;
   }
 
   scheduleEl.classList.toggle("has-my-team", Boolean(state.myTeam));
@@ -573,11 +602,18 @@ async function init() {
   TEAMS.forEach((t) => teamSelect.add(new Option(t, t)));
   state.myTeam = loadMyTeam();
   teamSelect.value = state.myTeam;
+  syncFilterControl(); // 응원팀이 저장되어 있어도 필터는 항상 꺼진 상태로 시작
 
   // 버튼 이벤트 연결
   teamSelect.addEventListener("change", () => {
     state.myTeam = teamSelect.value;
     saveMyTeam(state.myTeam);
+    // 다른 팀으로 바꾸면 필터 상태는 그대로 두고, 응원팀을 해제하면 필터가 자동으로 꺼집니다
+    syncFilterControl();
+    render();
+  });
+  onlyMineChk.addEventListener("change", () => {
+    state.onlyMine = onlyMineChk.checked;
     render();
   });
   $("weekBtn").addEventListener("click", () => setView("week"));
