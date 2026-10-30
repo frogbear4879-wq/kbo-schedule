@@ -236,12 +236,17 @@ function showMessage(html, isError = false) {
 // ---------- 6. 사용자 조작 ----------
 
 // 이전/다음 이동 (주간은 7일, 월간은 한 달)
+// 월간 이동 때 '몇 일'인지는 그대로 유지합니다 (예: 9월 8일 → 10월 8일).
+// 1일로 바꿔 버리면 주간 보기로 돌아왔을 때 보던 날짜와 상관없는 주가 열리기 때문입니다.
+// 도착한 달에 그 날이 없으면(예: 1월 31일 → 2월) 그 달의 마지막 날로 맞춥니다.
 function move(direction) {
   const d = state.baseDate;
-  state.baseDate =
-    state.view === "week"
-      ? addDays(d, 7 * direction)
-      : new Date(d.getFullYear(), d.getMonth() + direction, 1);
+  if (state.view === "week") {
+    state.baseDate = addDays(d, 7 * direction);
+  } else {
+    const lastDay = new Date(d.getFullYear(), d.getMonth() + direction + 1, 0).getDate();
+    state.baseDate = new Date(d.getFullYear(), d.getMonth() + direction, Math.min(d.getDate(), lastDay));
+  }
   render();
 }
 
