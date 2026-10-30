@@ -185,15 +185,25 @@ body {
   .toggle button { flex: 1; }
   .toggle { display: flex; }
 
-  /* 요일 머리글은 숨기고, 날짜를 세로 목록으로 보여줌 */
+  /* 주간 보기: 요일 머리글은 숨기고, 날짜를 세로 목록으로 보여줌 */
   .schedule { grid-template-columns: 1fr; }
   .weekday-head { display: none; }
   .day { min-height: 0; }
   .day-label .dow { display: inline; }
-  /* 월간 보기에서는 경기가 없는 날과 다른 달 날짜를 숨겨 목록을 짧게 */
-  .day.is-month-view.empty,
-  .day.other-month { display: none; }
   .game { font-size: .9rem; }
+
+  /* 월간 보기(T7): 7열 달력 격자. 칸에는 날짜 숫자, 경기 수, 응원팀 ★만 보여줌 */
+  .schedule.is-month { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .schedule.is-month .weekday-head { display: block; }
+  .schedule.is-month .day { padding: 4px 2px; border-radius: 8px; text-align: center; }
+  .schedule.is-month .day > :not(.day-compact) { display: none; }  /* 경기 카드·라벨은 숨김(T8에서 날짜 선택 시 사용) */
+  .schedule.is-month .day-compact {
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    gap: 1px; min-height: 52px;
+  }
+  .schedule.is-month .day.other-month { opacity: .45; }
+  .schedule.is-month .day.has-mine { background: #fff7ed; border-color: #fb923c; box-shadow: 0 0 0 1px rgba(251, 146, 60, .5); }
+  .schedule.is-month .month-legend { display: block; grid-column: 1 / -1; margin-top: 4px; text-align: center; font-size: .8rem; color: #c2410c; }
 }
 
 /* ===== 점수 표시 / 클릭 가능한 카드 ===== */
@@ -307,3 +317,12 @@ body {
 .fd-status-label { font-size: .75rem; opacity: .8; }
 .fd-status-name { font-size: 1.6rem; line-height: 1.2; }
 .fd-status-note { font-size: .85rem; }
+
+/* ===== 월간 달력 칸(모바일 전용 표시) ===== */
+.day-compact { display: none; }
+.dc-num { font-size: .9rem; font-weight: 700; line-height: 1.4; }
+.dc-num.sun { color: #dc2626; }
+.dc-num.sat { color: #2563eb; }
+.dc-count { font-size: .68rem; color: #1d4ed8; background: #dbeafe; border-radius: 999px; padding: 0 5px; line-height: 1.5; white-space: nowrap; }
+.dc-star { font-size: .8rem; line-height: 1; color: #ea580c; }
+.month-legend { display: none; }

@@ -174,8 +174,23 @@ function dayCell(date, gamesByDate, extraClass = "") {
   const label = state.view === "week" ? `${date.getMonth() + 1}/${date.getDate()}` : `${date.getDate()}`;
   const body = list.length ? list.map(gameCard).join("") : `<div class="no-game">경기 없음</div>`;
 
+  // 응원팀이 선택되어 있고, 그날 응원팀 경기가 있는지
+  const hasMine = Boolean(state.myTeam) && list.some((g) => g.home_team === state.myTeam || g.away_team === state.myTeam);
+
+  // 월간 보기용 간단한 칸(날짜 숫자 + 경기 수 + 응원팀 ★).
+  // 모바일 화면에서만 보이고, PC 화면에서는 CSS로 숨깁니다.
+  const compact =
+    state.view === "month"
+      ? `<div class="day-compact">
+          <span class="dc-num ${dowClass}">${date.getDate()}</span>
+          ${list.length ? `<span class="dc-count">${list.length}경기</span>` : ""}
+          ${hasMine ? `<span class="dc-star" title="응원팀 경기 있음">★</span>` : ""}
+        </div>`
+      : "";
+
   return `
-    <div class="day ${extraClass} ${list.length ? "" : "empty"}">
+    <div class="day ${extraClass} ${list.length ? "" : "empty"} ${hasMine ? "has-mine" : ""}">
+      ${compact}
       <div class="day-label ${dowClass}">${label}<span class="dow">(${DAY_NAMES[dow]})</span></div>
       ${body}
     </div>`;
@@ -223,7 +238,10 @@ function render() {
   }
 
   scheduleEl.classList.toggle("has-my-team", Boolean(state.myTeam));
-  scheduleEl.innerHTML = heads + cells;
+  scheduleEl.classList.toggle("is-month", state.view === "month"); // 모바일 월간 달력 격자용
+  // 모바일 월간 달력에서 ★의 뜻을 알려 주는 안내 (응원팀 선택 시에만, PC에서는 CSS로 숨김)
+  const legend = state.view === "month" && state.myTeam ? `<div class="month-legend">★ 응원팀(${state.myTeam}) 경기가 있는 날</div>` : "";
+  scheduleEl.innerHTML = heads + cells + legend;
 }
 
 // 안내/오류 메시지 표시
