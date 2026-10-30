@@ -115,8 +115,8 @@
 ## 11. 배포 정보
 | 항목 | 내용 |
 |---|---|
-| 배포 주소 (Vercel) | 배포 후 입력 예정 |
-| GitHub 저장소 주소 | 배포 후 입력 예정 |
+| 배포 주소 (Vercel) | https://kbo-schedule.vercel.app/ |
+| GitHub 저장소 주소 | https://github.com/frogbear4879-wq/kbo-schedule |
 | 배포 데이터 | 시연용 가상 데이터 (실제 경기 일정·결과 아님) |
 
 ## 12. 사전 준비 체크
